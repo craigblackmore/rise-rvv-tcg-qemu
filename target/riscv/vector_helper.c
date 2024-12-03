@@ -409,6 +409,7 @@ vext_ldst_us(void *vd, target_ulong base, CPURISCVState *env, uint32_t desc,
                     lde_d_tlb(env, adjust_addr(env, addr), j, vd, ra);
                 else
                     ste_d_tlb(env, adjust_addr(env, addr), j, vd, ra);
+                env->vstart += (8 >> log2_esz);
                 j += 8;
             }
             else if ((evl_b - j) >= 4) {
@@ -416,6 +417,7 @@ vext_ldst_us(void *vd, target_ulong base, CPURISCVState *env, uint32_t desc,
                     lde_w_tlb(env, adjust_addr(env, addr), j, vd, ra);
                 else
                     ste_w_tlb(env, adjust_addr(env, addr), j, vd, ra);
+                env->vstart += (4 >> log2_esz);
                 j += 4;
             }
             else if ((evl_b - j) >= 2) {
@@ -423,6 +425,7 @@ vext_ldst_us(void *vd, target_ulong base, CPURISCVState *env, uint32_t desc,
                     lde_h_tlb(env, adjust_addr(env, addr), j, vd, ra);
                 else
                     ste_h_tlb(env, adjust_addr(env, addr), j, vd, ra);
+                env->vstart += (2 >> log2_esz);
                 j += 2;
             }
             else {
@@ -430,6 +433,7 @@ vext_ldst_us(void *vd, target_ulong base, CPURISCVState *env, uint32_t desc,
                     lde_b_tlb(env, adjust_addr(env, addr), j, vd, ra);
                 else
                     ste_b_tlb(env, adjust_addr(env, addr), j, vd, ra);
+                env->vstart++;
                 j += 1;
             }
         }
