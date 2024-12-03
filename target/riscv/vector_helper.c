@@ -398,12 +398,12 @@ vext_ldst_us(void *vd, target_ulong base, CPURISCVState *env, uint32_t desc,
      * better performance by doing a simple simulation of the load/store
      * without the overhead of prodding the host RAM */
     if ((nf == 1) && ((evl << log2_esz) <= 8 ||
-	((vext_lmul(desc) == 0) && (simd_maxsz(desc) == 16)))) {
+        ((vext_lmul(desc) == 0) && (simd_maxsz(desc) == 16)))) {
 
-	uint32_t evl_b = evl << log2_esz;
+        uint32_t evl_b = evl << log2_esz;
 
         for (uint32_t j = env->vstart; j < evl_b;) {
-	    addr = base + j;
+            addr = base + j;
             if ((evl_b - j) >= 8) {
                 if (is_load)
                     lde_d_tlb(env, adjust_addr(env, addr), j, vd, ra);
