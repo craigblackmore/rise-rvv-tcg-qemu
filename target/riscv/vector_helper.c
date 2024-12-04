@@ -406,7 +406,16 @@ vext_ldst_us(void *vd, target_ulong base, CPURISCVState *env, uint32_t desc,
 
         for (uint32_t j = env->vstart; j < evl_b;) {
             addr = base + j;
-            if ((evl_b - j) >= 8) {
+            /*
+             * If accessing more than one element, make sure it is atomic.
+             *
+             * Calling `{ld,st}e_[dwh]_tlb` eventually calls the `user-exec.c`
+             * implementations of `do_{ld,st}[248]_mmu` which call
+             * `{load,store}_atom_[248]`. The default atomicity requirement is
+             * MO_ALIGN_IFALIGN, so only access multiple elements if they are
+             * aligned to the access size.
+             */
+            if (esz == 8 || ((evl_b - j) >= 8 && (addr % 8) == 0)) {
                 if (is_load) {
                     lde_d_tlb(env, adjust_addr(env, addr), j, vd, ra);
                 } else {
@@ -414,7 +423,7 @@ vext_ldst_us(void *vd, target_ulong base, CPURISCVState *env, uint32_t desc,
                 }
                 env->vstart += (8 >> log2_esz);
                 j += 8;
-            } else if ((evl_b - j) >= 4) {
+            } else if (esz == 4 || ((evl_b - j) >= 4 && (addr % 4) == 0)) {
                 if (is_load) {
                     lde_w_tlb(env, adjust_addr(env, addr), j, vd, ra);
                 } else {
@@ -422,7 +431,7 @@ vext_ldst_us(void *vd, target_ulong base, CPURISCVState *env, uint32_t desc,
                 }
                 env->vstart += (4 >> log2_esz);
                 j += 4;
-            } else if ((evl_b - j) >= 2) {
+            } else if (esz == 2 || ((evl_b - j) >= 2 && (addr % 2) == 0)) {
                 if (is_load) {
                     lde_h_tlb(env, adjust_addr(env, addr), j, vd, ra);
                 } else {
