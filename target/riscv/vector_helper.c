@@ -393,6 +393,60 @@ vext_ldst_us(void *vd, target_ulong base, CPURISCVState *env, uint32_t desc,
         return;
     }
 
+#if defined(CONFIG_USER_ONLY) && !HOST_BIG_ENDIAN
+    /*
+     * For data sizes <= 64 bits and for LMUL=1 with VLEN=128 bits we get a
+     * better performance by doing a simple simulation of the load/store
+     * without the overhead of prodding the host RAM
+     */
+    if ((nf == 1) && ((evl << log2_esz) <= 8 ||
+        ((vext_lmul(desc) == 0) && (simd_maxsz(desc) == 16)))) {
+
+        uint32_t evl_b = evl << log2_esz;
+
+        for (uint32_t j = env->vstart; j < evl_b;) {
+            addr = base + j;
+            if ((evl_b - j) >= 8) {
+                if (is_load) {
+                    lde_d_tlb(env, adjust_addr(env, addr), j, vd, ra);
+                } else {
+                    ste_d_tlb(env, adjust_addr(env, addr), j, vd, ra);
+                }
+                env->vstart += (8 >> log2_esz);
+                j += 8;
+            } else if ((evl_b - j) >= 4) {
+                if (is_load) {
+                    lde_w_tlb(env, adjust_addr(env, addr), j, vd, ra);
+                } else {
+                    ste_w_tlb(env, adjust_addr(env, addr), j, vd, ra);
+                }
+                env->vstart += (4 >> log2_esz);
+                j += 4;
+            } else if ((evl_b - j) >= 2) {
+                if (is_load) {
+                    lde_h_tlb(env, adjust_addr(env, addr), j, vd, ra);
+                } else {
+                    ste_h_tlb(env, adjust_addr(env, addr), j, vd, ra);
+                }
+                env->vstart += (2 >> log2_esz);
+                j += 2;
+            } else {
+                if (is_load) {
+                    lde_b_tlb(env, adjust_addr(env, addr), j, vd, ra);
+                } else {
+                    ste_b_tlb(env, adjust_addr(env, addr), j, vd, ra);
+                }
+                env->vstart++;
+                j += 1;
+            }
+        }
+
+        env->vstart = 0;
+        vext_set_tail_elems_1s(evl, vd, desc, nf, esz, max_elems);
+        return;
+    }
+#endif
+
     /* Calculate the page range of first page */
     addr = base + ((env->vstart * nf) << log2_esz);
     page_split = -(addr | TARGET_PAGE_MASK);
