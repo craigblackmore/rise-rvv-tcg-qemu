@@ -395,10 +395,10 @@ vext_ldst_us(void *vd, target_ulong base, CPURISCVState *env, uint32_t desc,
 
 #if defined(CONFIG_USER_ONLY)
     /*
-     * For data sizes < 12 bits we get better performance by simply calling
+     * For data sizes <= 6 bytes we get better performance by simply calling
      * vext_continuous_ldst_tlb
      */
-    if (nf == 1 && (evl << log2_esz) < 12) {
+    if (nf == 1 && (evl << log2_esz) <= 6) {
         addr = base + (env->vstart << log2_esz);
         vext_continuous_ldst_tlb(env, ldst_tlb, vd, evl, addr, env->vstart, ra,
                                  esz, is_load);
